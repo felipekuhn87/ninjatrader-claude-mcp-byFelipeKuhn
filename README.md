@@ -119,7 +119,19 @@ Replace `/full/path/to/` with the actual path where you cloned this repo.
 #### Step 5 — Write your prompt and start
 
 Open `example_prompt.md` to understand the structure and available tools.
-Then write your own prompt, start Claude Code, and let it connect.
+Then write your own prompt file (e.g. `my_prompt.md`) and run Claude Code in a loop:
+
+```bash
+claude
+```
+
+Inside the Claude Code session, use the `/loop` command to run your strategy automatically every N minutes:
+
+```text
+/loop 5m execute the trading strategy defined in my_prompt.md
+```
+
+Claude will read the market, make decisions, and execute trades every 5 minutes — hands free.
 
 ### Available tools
 
@@ -272,7 +284,19 @@ Substitua `/caminho/completo/para/` pelo caminho real onde você clonou este rep
 #### Passo 5 — Escreva seu prompt e comece
 
 Abra o arquivo `example_prompt.md` para entender a estrutura e as ferramentas disponíveis.
-Depois escreva o seu próprio prompt, inicie o Claude Code e deixe ele conectar.
+Depois escreva o seu próprio arquivo de prompt (ex: `meu_prompt.md`) e inicie o Claude Code:
+
+```bash
+claude
+```
+
+Dentro da sessão do Claude Code, use o comando `/loop` para rodar sua estratégia automaticamente a cada N minutos:
+
+```text
+/loop 5m execute a estratégia de trading definida em meu_prompt.md
+```
+
+O Claude vai ler o mercado, tomar decisões e executar ordens a cada 5 minutos — sem intervenção.
 
 ### Ferramentas disponíveis
 
