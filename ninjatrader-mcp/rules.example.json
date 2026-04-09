@@ -1,0 +1,165 @@
+{
+  "instrument": {
+    "symbol": "MNQ",
+    "name": "Micro E-mini Nasdaq-100",
+    "tick_size": 0.25,
+    "tick_value": 0.50,
+    "point_value": 2.00,
+    "exchange": "CME"
+  },
+
+  "execution": {
+    "broker": "Tradovate via Apex Trader Funding",
+    "account_type": "Funded / Evaluation",
+    "max_contracts": 2,
+    "default_contracts": 2,
+    "use_fixed_contracts": false,
+    "platform": "NinjaTrader 8"
+  },
+
+  "trading_hours": {
+    "timezone": "America/New_York",
+    "session_start": "09:30",
+    "session_end": "15:50",
+    "flatten_at": "15:55",
+    "no_trade_windows": ["09:30-09:35", "15:50-16:00"]
+  },
+
+  "risk_management": {
+    "account_balance": 50000,
+    "max_daily_loss_usd": 200,
+    "max_daily_loss_points": 100,
+    "max_trades_per_day": 5,
+    "max_consecutive_losses": 3,
+    "warning_threshold_usd": 150,
+    "stop_after_max_loss": true
+  },
+
+  "analysis_framework": {
+    "description": "SMC + Fibonacci + Order Flow. Indicators are confirmation only.",
+    "hierarchy": [
+      "1. Market Structure (SMC) — BOS, CHoCH, swing points",
+      "2. Key Levels — Order Blocks, FVGs, Liquidity, Fibonacci OTE",
+      "3. Price Action — displacement, wicks, engulfings",
+      "4. Order Flow — DOM absorption, imbalances, T&S aggression",
+      "5. Indicators — VWAP, EMA, RSI, MACD as confirmation"
+    ],
+    "minimum_confluence": 4,
+    "data_sources": {
+      "bars": "nt_get_bars(count=100, summary=true)",
+      "indicators": "nt_get_indicators",
+      "dom": "nt_get_dom(levels=10)",
+      "time_sales": "nt_get_time_sales(count=50)",
+      "quote": "nt_get_quote"
+    }
+  },
+
+  "smc_framework": {
+    "market_structure": {
+      "uptrend": "HH + HL, BOS to upside confirms",
+      "downtrend": "LH + LL, BOS to downside confirms",
+      "choch": "First HH in downtrend or first LL in uptrend = potential reversal"
+    },
+    "order_blocks": {
+      "bullish": "Last bearish candle before bullish displacement",
+      "bearish": "Last bullish candle before bearish displacement",
+      "entry": "Wait for retest with rejection candle"
+    },
+    "fair_value_gaps": {
+      "description": "3-candle imbalance, price tends to fill 50%+",
+      "trading": "Use as entry zones with OB confluence"
+    },
+    "liquidity": {
+      "buy_side": "Stops above swing highs",
+      "sell_side": "Stops below swing lows",
+      "sweep": "Take stops then reverse — high probability reversal"
+    }
+  },
+
+  "fibonacci": {
+    "ote_zone": "0.618 - 0.786 retracement of latest swing",
+    "extensions": {
+      "tp1": "-0.272 (conservative)",
+      "tp2": "-0.618 (golden)",
+      "tp3": "-1.000 (full extension)"
+    }
+  },
+
+  "stop_loss": {
+    "method": "DYNAMIC — structure-based, NEVER fixed",
+    "rules": [
+      "LONG: below Order Block or swing low + 2 pts buffer",
+      "SHORT: above Order Block or swing high + 2 pts buffer",
+      "OTE entry: stop below 0.886 or swing extreme",
+      "Liquidity sweep: stop below/above the sweep wick",
+      "Min 6 pts, Max 30 pts. If structure requires more, skip."
+    ],
+    "execution": "nt_enter_long/short with sl parameter (atomic)"
+  },
+
+  "take_profit": {
+    "method": "DYNAMIC — structure + Fibonacci extensions",
+    "tp1": "First opposing OB/FVG or Fib -0.272 — close 1 contract",
+    "tp2": "Trail remaining 1 contract by swing structure",
+    "minimum_rr": 2.0
+  },
+
+  "position_management": {
+    "breakeven": {
+      "trigger": "Price reaches TP1 area (1.5R in profit)",
+      "action": "nt_breakeven (stop = entry + 2 pts)"
+    },
+    "trailing_stop": {
+      "method": "Structure-based — new swing low/high",
+      "execution": "nt_set_stoploss(new_price) on each scan",
+      "rules": [
+        "Never move stop further from price",
+        "On new HH (LONG): move stop to new HL",
+        "On new LL (SHORT): move stop to new LH",
+        "Near close: tighten aggressively"
+      ]
+    },
+    "partial_exits": {
+      "tp1": "Close 1 of 2 contracts when first target hit",
+      "remaining": "Trail 1 contract by structure"
+    }
+  },
+
+  "exit_triggers": [
+    "Stop loss hit (handled by NT)",
+    "Take profit hit (handled by NT)",
+    "CHoCH against position on 5min",
+    "Strong displacement against position with volume 2x average",
+    "DOM showing aggressive absorption against direction",
+    "VWAP cross against position with momentum",
+    "RSI divergence against position",
+    "Approaching session close (15:50 ET) — flatten",
+    "Daily loss limit approaching"
+  ],
+
+  "autonomous_rules": {
+    "always_do": [
+      "Log every decision with full reasoning",
+      "Verify nt_get_status before any trade",
+      "Set stop IMMEDIATELY (atomic via nt_enter_long/short)",
+      "Check daily P&L via trade log before each new trade",
+      "Respect session hours strictly",
+      "Flatten everything by 15:55 ET via nt_exit_all"
+    ],
+    "never_do": [
+      "Enter without minimum 4 confluence factors",
+      "Move stop further from entry",
+      "Add to losing position",
+      "Trade during FOMC, CPI, NFP, PPI",
+      "Exceed 2 contracts",
+      "Trade if daily loss exceeds $150",
+      "Exceed 5 trades per day"
+    ],
+    "circuit_breaker": {
+      "max_loss_usd": -200,
+      "warning_usd": -150,
+      "max_consecutive_losses": 3,
+      "action": "nt_exit_all + stop trading for the day"
+    }
+  }
+}
